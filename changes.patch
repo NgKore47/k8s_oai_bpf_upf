@@ -1,0 +1,247 @@
+diff --git a/charts/oai-5g-core/oai-5g-basic/config.yaml b/charts/oai-5g-core/oai-5g-basic/config.yaml
+index 69f85ac..c29eb6e 100644
+--- a/charts/oai-5g-core/oai-5g-basic/config.yaml
++++ b/charts/oai-5g-core/oai-5g-basic/config.yaml
+@@ -2,7 +2,7 @@
+ 
+ # Log level for all the NFs
+ log_level:
+-  general: info
++  general: debug
+ 
+ # If you enable registration, the other NFs will use the NRF discovery mechanism
+ register_nf:
+@@ -29,7 +29,7 @@ nfs:
+       api_version: v1
+       interface_name: eth0
+     n2:
+-      interface_name: eth0
++      interface_name: n2
+       port: 38412
+   smf:
+     host: oai-smf
+@@ -47,13 +47,13 @@ nfs:
+       api_version: v1
+       interface_name: eth0
+     n3:
+-      interface_name: eth0
++      interface_name: n3
+       port: 2152
+     n4:
+       interface_name: eth0
+       port: 8805
+     n6:
+-      interface_name: eth0
++      interface_name: n6
+     n9:
+       interface_name: eth0
+       port: 2152
+@@ -170,9 +170,9 @@ smf:
+ 
+ upf:
+   support_features:
+-    enable_bpf_datapath: no    # If "on": BPF is used as datapath else simpleswitch is used, DEFAULT= off
+-    enable_snat: yes           # If "on": Source natting is done for UE, DEFAULT= off
+-  remote_n6_gw: 127.0.0.1      # Dummy host since simple-switch does not use N6 GW
++    enable_bpf_datapath: yes    # If "on": BPF is used as datapath else simpleswitch is used, DEFAULT= off
++      #enable_snat: yes           # If "on": Source natting is done for UE, DEFAULT= off
++  remote_n6_gw: 192.168.22.4    # Dummy host since simple-switch does not use N6 GW
+   upf_info:
+     sNssaiUpfInfoList:
+     - sNssai: *embb_slice1
+diff --git a/charts/oai-5g-core/oai-5g-basic/values.yaml b/charts/oai-5g-core/oai-5g-basic/values.yaml
+index 5eb7dfb..a457bb9 100644
+--- a/charts/oai-5g-core/oai-5g-basic/values.yaml
++++ b/charts/oai-5g-core/oai-5g-basic/values.yaml
+@@ -83,7 +83,7 @@ oai-amf:
+     ## If you don't want to add a default route in your pod then replace this field with ""
+     defaultGateway: ""
+     n2Interface:
+-      create: false
++      create: true
+       Ipadd: "172.21.6.94"
+       Netmask: "22"
+       # #name inside the pod is hardcoded right now
+@@ -91,15 +91,15 @@ oai-amf:
+       ## If you do not have a gateway leave the field empty
+       Gateway:
+       ## If you do not want to add any routes in your pod then leave this field empty
+-      routes: [{'dst': '10.8.0.0/24','gw': '172.21.7.254'}]
+-      hostInterface: "bond0" # Interface of the host machine on which this pod will be scheduled
++      routes: ""
++      hostInterface: "eth0" # Interface of the host machine on which this pod will be scheduled
+   nodeSelector: {}
+ oai-upf:
+   enabled: true
+   kubernetesType: Vanilla #Openshift/Vanilla Vanilla for Upstream Kubernetes
+   nfimage:  # image name either locally present or in a public/private repository
+-    repository: docker.io/oaisoftwarealliance/oai-upf    ## The image will be pulled from dockerhub
+-    version: v2.0.1                                    ## The branch to be used to pull from dockerhub
++    repository: docker.io/khushichhillar/oupf    ## The image will be pulled from dockerhub
++    version: v2          ## The branch to be used to pull from dockerhub
+     # pullPolicy: IfNotPresent or Never or Always
+     pullPolicy: IfNotPresent
+   includeTcpDumpContainer: false #only for taking pcaps inside network function pod
+@@ -112,7 +112,7 @@ oai-upf:
+     ## If you don't want to add a default route in your pod then replace this field with ""
+     defaultGateway: ""
+     n3Interface:
+-      create: false
++      create: true
+       Ipadd: "172.21.8.95"
+       Netmask: "22"
+       # #name inside the pod is hardcoded right now
+@@ -120,8 +120,8 @@ oai-upf:
+       ## If you do not have a gateway leave the field empty
+       Gateway: ""
+       ## If you don't want to add a default route in your pod then replace this field with ""
+-      routes: [{'dst': '10.8.0.0/24','gw': '172.21.11.254'}, {'dst': '10.9.0.0/24','gw': '172.21.11.254'}]
+-      hostInterface: "bond0"
++      routes: ""
++      hostInterface: "eth0"
+     ## For n4 it is better to re-use eth0 interface inside the pod (primary CNI of Kubernetes)
+     n4Interface:
+       create: false
+@@ -133,9 +133,9 @@ oai-upf:
+       Gateway: ""
+       ## If you do not want to add any routes in your pod then leave this field empty
+       routes: ""
+-      hostInterface: "bond0"
++      hostInterface: "eth0"
+     n6Interface:
+-      create: false
++      create: true
+       Ipadd: "192.168.22.2"
+       # #name inside the pod is hardcoded right now
+       # name: "n6"
+@@ -144,29 +144,29 @@ oai-upf:
+       Gateway: ""
+       ## If you do not want to add any routes in your pod then leave this field empty
+       routes: ""
+-      hostInterface: "bond0"
++      hostInterface: "eth0"
+   #NOTE: If the interface you selected for n6If is wrong then traffic will not be routed towards internet
+   nodeSelector: {}
+-# oai-traffic-server:
+-#  enabled: false
+-#  weight: 6
+-#  kubernetesType: Vanilla
+-#  trafficServer:
+-#    repository: docker.io/oaisoftwarealliance/trf-gen-cn5g
+-#    version: latest
+-#    #pullPolicy: IfNotPresent or Never or Always
+-#    pullPolicy: IfNotPresent
+-#  #Without multus traffic server won't be able to forward packets to spgwu if can't use server then add an extra container in spgwu with iperf3 or install iperf3 package in tcpdump container
+-#  multus:
+-#    create: true
+-#    IPadd: "172.21.6.99"
+-#    Netmask: "22"
+-#    defaultGateway: "172.21.7.254"
+-#    hostInterface: "bond0"	# Interface of the host machine on which this pod will be scheduled
+-#  config:
+-#    ueroute: 12.1.1.0/24
+-#    upfIpadd: 172.21.6.95
+-#    noOfIperf3Server: 10
++oai-traffic-server:
++ enabled: true
++ weight: 6
++ kubernetesType: Vanilla
++ trafficServer:
++   repository: docker.io/oaisoftwarealliance/trf-gen-cn5g
++   version: latest
++   #pullPolicy: IfNotPresent or Never or Always
++   pullPolicy: IfNotPresent
++ #Without multus traffic server won't be able to forward packets to spgwu if can't use server then add an extra container in spgwu with iperf3 or install iperf3 package in tcpdump container
++ multus:
++   create: true
++   IPadd: "192.168.22.4"
++   Netmask: "24"
++   defaultGateway: "192.168.22.254"
++   hostInterface: "eth0"	# Interface of the host machine on which this pod will be scheduled
++ config:
++   ueroute: 12.1.1.0/24
++   upfIpadd: 192.168.22.2
++   noOfIperf3Server: 10
+ oai-smf:
+   enabled: true
+   kubernetesType: Vanilla #Openshift/Vanilla Vanilla for Upstream Kubernetes
+@@ -187,7 +187,7 @@ oai-smf:
+       Gateway: ""
+       ## If you do not want to add any routes in your pod then leave this field empty
+       #routes: [{'dst': '10.8.0.0/24','gw': '172.21.7.254'}, {'dst': '10.9.0.0/24','gw': '172.21.7.254'}]
+-      hostInterface: "bond0"
++      hostInterface: "eth0"
+   nodeSelector: {}
+   imagePullSecrets:
+     - name: "regcred"
+diff --git a/charts/oai-5g-ran/oai-gnb/values.yaml b/charts/oai-5g-ran/oai-gnb/values.yaml
+index c00e55f..dee71cd 100644
+--- a/charts/oai-5g-ran/oai-gnb/values.yaml
++++ b/charts/oai-5g-ran/oai-gnb/values.yaml
+@@ -37,7 +37,7 @@ multus:
+   # if default gatway is empty then it will be removed
+   defaultGateway: ""
+   n2Interface:
+-    create: false
++    create: true
+     # #name inside the pod is hardcoded right now
+     # name: "n2"
+     IPadd: "172.21.6.90"
+@@ -45,9 +45,9 @@ multus:
+     # if gatway is empty then it will be removed
+     #Gateway: "172.21.7.254"
+     #routes: [{'dst': '10.8.0.0/24','gw': '172.21.7.254'}, {'dst': '10.9.0.0/24','gw': '172.21.7.254'}]
+-    hostInterface: "bond0"      # Interface of the host machine on which this pod will be scheduled
++    hostInterface: "eth0"      # Interface of the host machine on which this pod will be scheduled
+   n3Interface:
+-    create: false
++    create: true
+     IPadd: "172.21.8.91"
+     # #name inside the pod is hardcoded right now
+     # name: "n3"
+@@ -55,7 +55,7 @@ multus:
+     # if gatway is empty then it will be removed
+     #Gateway: "172.21.11.254"
+     #routes:
+-    hostInterface: "bond0"      # Interface of the host machine on which this pod will be scheduled
++    hostInterface: "eth0"      # Interface of the host machine on which this pod will be scheduled
+   ruInterface:            #Only needed if using a ethernet based RU/USRP
+     create: false
+     IPadd: "192.168.80.90"
+@@ -80,9 +80,9 @@ config:
+   tac: "1"     # check the information with AMF
+   sst: "1"  #currently only 4 standard values are allowed 1,2,3,4
+   usrp: rfsim   #allowed values rfsim, b2xx, n3xx or x3xx
+-  amfhost: "oai-amf"  # amf ip-address or service-name oai-amf-svc or 172.21.6.94
+-  n2IfName: "eth0"    # if multus.n2Interface.create is true then use n2
+-  n3IfName: "eth0"   #if multus.n3Interface.create is true then use n3 or you can only use 1 interface n2 or eth0 
++  amfhost: "172.21.6.94"  # amf ip-address or service-name oai-amf-svc or 172.21.6.94
++  n2IfName: "n2"    # if multus.n2Interface.create is true then use n2
++  n3IfName: "n3"   #if multus.n3Interface.create is true then use n3 or you can only use 1 interface n2 or eth0 
+ 
+ ## Debugging section
+ start:
+diff --git a/charts/oai-5g-ran/oai-nr-ue/values.yaml b/charts/oai-5g-ran/oai-nr-ue/values.yaml
+index 7322c16..5f7a88d 100644
+--- a/charts/oai-5g-ran/oai-nr-ue/values.yaml
++++ b/charts/oai-5g-ran/oai-nr-ue/values.yaml
+@@ -23,16 +23,16 @@ imagePullSecrets:
+ 
+ ## Change these ip-addresses according to your environment
+ multus:
+-  create: false
++  create: true
+   ipadd: "172.21.6.27"  # subnet should be able to reach the gNB
+   netmask: "22"
+   # if default route is not needed then leave the field empty
+   defaultGateway: "172.21.7.254"
+-  hostInterface: "bond0"
++  hostInterface: "eth0"
+ 
+ config:
+   timeZone: "Europe/Paris"
+-  rfSimServer: "oai-ran"    # ip-address of rfsim or service name oai-gnb or oai-du
++  rfSimServer: "172.21.6.90"    # ip-address of rfsim or service name oai-gnb or oai-du
+   fullImsi: "001010000000100"       # make sure all the below entries are present in the subscriber database
+   fullKey: "fec86ba6eb707ed08905757b1bb44b8f" 
+   opc: "C42449363BBAD02B66D16BC975D77CC1"
