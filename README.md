@@ -3,7 +3,7 @@
 This readme provides guidelines for deploying OAI 5G Core with an eBPF-based User Plane Function (UPF).
 ### Step 1: Clone this repository
 ```bash
-git clone https://github.com/wafi981/-k8s-oai-eupf.git ~/k8s-oai-eupf
+git clone https://github.com/evershalik/k8s_oai_bpf_upf ~/k8s-oai-eupf
 cd ~/k8s-oai-eupf
 ```
 ### Step 2: Install make and deploy rke2 kubernetes cluster
