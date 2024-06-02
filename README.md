@@ -25,7 +25,8 @@ and run these commands inside the po
 ```bash
 ip route change default via 169.254.1.1 dev eth0
 sysctl -w net.ipv4.ip_forward=1
-iptables -t nat -A POSTROUTING -s 12.1.1.0/24 -o eth0 -j SNAT --to-source <eth0 ip address>
+ip_address=$(ifconfig | grep 'inet ' | awk '{print $2}' | head -n 1)
+iptables -t nat -A POSTROUTING -s 12.1.1.0/24 -o eth0 -j SNAT --to-source $ip_address
 ```
 ### Check internet connectivity 
 Go inside oai-nr-ue pod 
